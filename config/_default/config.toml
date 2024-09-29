@@ -1,5 +1,5 @@
 # Change baseurl before deploy
-baseurl = "https://lantern-lab.github.io/"
+baseurl = "https://lantern-lab.github.io/lantern-lab123.github.io/"
 languageCode = "en-us"
 title = "Hugo Theme Stack Starter"
 
