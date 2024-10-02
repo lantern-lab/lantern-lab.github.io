@@ -1,5 +1,5 @@
 ---
-title: 技术链接
+title: Links
 links:
   - title: GitHub
     description: GitHub is the world's largest software development platform.
@@ -8,7 +8,7 @@ links:
   - title: TypeScript
     description: TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.
     website: https://www.typescriptlang.org
-    image: ts-logo-128.jpg
+    image: hugo-logo.svg
 menu:
     main: 
         weight: 4
