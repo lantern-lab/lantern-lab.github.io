@@ -10,15 +10,17 @@
 [[social]]
 identifier = "github"
 name = "GitHub"
-url = "https://github.com/CaiJimmy/hugo-theme-stack"
+weight = 1
+url = "https://github.com/lantern-lab/lantern-lab.github.io"
 
 [social.params]
 icon = "brand-github"
 
 [[social]]
-identifier = "twitter"
-name = "Twitter"
-url = "https://twitter.com"
+identifier = "csdn"
+name = "CSDN"
+weight = 2
+url = "https://blog.csdn.net/qq_40487134?type=blog"
 
 [social.params]
-icon = "brand-twitter"
+icon = "csdn"
