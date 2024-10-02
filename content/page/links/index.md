@@ -6,7 +6,7 @@ links:
     website: https://github.com
     image: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
   - title: Hugo
-    description: The world’s fastest framework for building websites.
+    description: The world’s fastest framework for building websites（本站技术框架）.
     website: https://gohugo.io/
     image: hugo-logo.svg
   - title: Stack
@@ -22,4 +22,4 @@ menu:
 comments: false
 ---
 
-一些你可能会用到的技术😁
+一些你可能会用到的链接😁
