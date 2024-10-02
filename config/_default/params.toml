@@ -19,7 +19,7 @@ subtitle = "春困 夏倦 秋乏 冬眠"
 [sidebar.avatar]
 enabled = true
 local = true
-src = "img/11.png"
+src = "img/avatar2.png"
 
 [article]
 headingAnchor = false
