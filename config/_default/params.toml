@@ -2,10 +2,10 @@
 mainSections = ["post"]
 # Output page's full content in RSS.
 rssFullContent = true
-favicon = "/favicon.ico"
+favicon = "/pokeball.ico"
 
 [footer]
-since = 2022
+since = 2024
 customText = ""
 
 [dateFormat]
@@ -13,8 +13,8 @@ published = "2006/01/02"
 lastUpdated = "Jan 02, 2006 15:04 MST"
 
 [sidebar]
-emoji = "🍥"
-subtitle = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+emoji = "🤔"
+subtitle = "春困 夏倦 秋乏 冬眠"
 
 [sidebar.avatar]
 enabled = true
