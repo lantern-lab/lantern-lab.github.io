@@ -13,6 +13,10 @@ links:
     description: Card-style theme designed for bloggers（本站主题）.
     website: https://stack.jimmycai.com/
     image: stack-logo.png  
+  - title: utterances
+    description: A lightweight comments widget built on GitHub issues（本站评论）.
+    website: https://utteranc.es/
+    image: utterances-logo.png 
 menu:
     main: 
         weight: 4
