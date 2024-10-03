@@ -1,18 +1,5 @@
----
-title: Java反序列化
-slug: java-derivativeization-280j9j
-url: /post/java-derivativeization-280j9j.html
-date: '2024-10-04 01:24:26+08:00'
-lastmod: '2024-10-04 01:29:02+08:00'
-toc: true
-tags:
-  - CommonsCollections
-  - Java反序列化
-keywords: CommonsCollections,Java反序列化
-isCJKLanguage: true
-categories:
-  - Java
----
+
+![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/ceshi-20241004014614-s2zxdbh.jpg)
 
 # Java反序列化
 
