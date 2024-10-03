@@ -1,5 +1,5 @@
 
-![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/null%E6%B0%B4%E4%B8%8B%E5%8F%AF%E7%88%B1%E5%8A%A8%E6%BC%AB%E5%A5%B3%E5%AD%A9%E6%A1%8C%E9%9D%A2%E5%A3%81%E7%BA%B8%E8%83%8C%E6%99%AF%E5%9B%BE_%E5%BD%BC%E5%B2%B8%E5%A3%81%E7%BA%B8-20241003233635-lo0zf5y.jpg)
+![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/null%E6%B0%B4%E4%B8%8B%E5%8F%AF%E7%88%B1%E5%8A%A8%E6%BC%AB%E5%A5%B3%E5%AD%A9%E6%A1%8C%E9%9D%A2%E5%A3%81%E7%BA%B8%E8%83%8C%E6%99%AF%E5%9B%BE_%E5%BD%BC%E5%B2%B8%E5%A3%81%E7%BA%B8-20241003233635-lo0zf5y.jpg)
 
 # Java反序列化
 
@@ -19,7 +19,7 @@
 
 综上：**序列化的主要目的是通过网络传输对象或者说是将对象存储到文件系统、数据库、内存中。**
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/nullimage-20240915163123-109rbae.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240915163123-109rbae.png)​
 
 ## CommonsCollections1
 
@@ -108,7 +108,7 @@ public class CommonsCollections1 {
 
 checkSetValue对应的实现有两个如下：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/nullimage-20240908144737-6lcujed.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908144737-6lcujed.png)​
 
 根据PoC的代码，这里会执行TransformMap里定义的checkSetValue。
 
@@ -164,7 +164,7 @@ PoC中构造的transformers变量先到transformerChain再到outerMap，outerMap
 
 transform对应的实现有21个如下：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/nullimage-20240908150459-4aix5gt.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908150459-4aix5gt.png)​
 
 根据PoC中的代码，这里会运行ChainedTransformer类实现的transform。
 
@@ -194,7 +194,7 @@ ChainedTransformer实现了Transformer接口，实现了transform。
 
 transform对应的实现有21个如下：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/nullimage-20240908150459-4aix5gt.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908150459-4aix5gt.png)​
 
 根据PoC中transformers变量的定义，该循环会先调用一次ConstantTransformer中实现的transform，再调用三次InvokerTransformer中实现的transform。
 
