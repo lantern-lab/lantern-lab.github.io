@@ -2,7 +2,7 @@
 title: Java反序列化
 slug: java-derivativeization-280j9j
 url: /post/java-derivativeization-280j9j.html
-date: '2024-10-04 01:24:26+08:00'
+date: '2024-09-04 01:24:26+08:00'
 lastmod: '2024-10-04 02:24:39+08:00'
 toc: true
 tags:
@@ -12,6 +12,7 @@ categories:
   - Java
 keywords: CommonsCollections,Java反序列化
 isCJKLanguage: true
+image: /post/images/ceshi.jpg
 ---
 
 # Java反序列化
