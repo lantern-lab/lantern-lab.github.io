@@ -11,7 +11,10 @@ categories:
   - Java
 keywords: Java反射
 isCJKLanguage: true
+image: assets/gou-20241004020221-gv1r3ve.jpg
 ---
+
+![image](assets/gou-20241004020221-gv1r3ve.jpg)
 
 # Java反射
 
