@@ -1,18 +1,3 @@
----
-title: Java反序列化
-slug: commoncollections1-cjyxy
-url: /post/commoncollections1-cjyxy.html
-date: '2024-09-07 16:27:32+08:00'
-lastmod: '2024-10-04 00:49:36+08:00'
-toc: true
-tags:
-  - Java反序列化
-  - CommonsCollections
-categories:
-  - Java
-keywords: Java反序列化,CommonsCollections
-isCJKLanguage: true
----
 
 # Java反序列化
 
@@ -594,7 +579,7 @@ public class CommonsCollections1 {
 
 在源码处下断，调试程序，可以看到此处各个变量的值：
 
-​![image](assets/image-20240915172449-wefqila.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/image-20240915172449-wefqila.png)​
 
 可以看到在3处，触发了AbstractMapEntryDecorator的调用，这就与PoC调用分析中的AbstractInputCheckedMapDecorator对应上了。
 
