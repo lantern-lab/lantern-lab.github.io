@@ -10,6 +10,8 @@ tags:
   - Java反序列化
 keywords: CommonsCollections,Java反序列化
 isCJKLanguage: true
+categories:
+  - Java
 ---
 
 # Java反序列化
