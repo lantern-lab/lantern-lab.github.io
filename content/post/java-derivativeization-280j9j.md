@@ -4,7 +4,7 @@ slug: java-derivativeization-280j9j
 url: /post/java-derivativeization-280j9j.html
 date: '2024-10-04 01:24:26+08:00'
 lastmod: '2024-10-04 01:29:02+08:00'
-image: [assets/ceshi-20241004014614-s2zxdbh.jpg](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/ceshi-20241004014614-s2zxdbh.jpg)
+image: https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/ceshi-20241004014614-s2zxdbh.jpg
 toc: true
 tags:
   - CommonsCollections
