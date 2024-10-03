@@ -1,21 +1,3 @@
----
-title: Java反序列化
-slug: commoncollections1-cjyxy
-url: /post/commoncollections1-cjyxy.html
-date: '2024-09-07 16:27:32+08:00'
-lastmod: '2024-10-03 23:18:59+08:00'
-toc: true
-image: assets/水下可爱动漫女孩桌面壁纸背景图_彼岸壁纸-20241003233635-lo0zf5y.jpg
-tags:
-  - Java反序列化
-  - CommonsCollections
-keywords: Java反序列化,CommonsCollections
-isCJKLanguage: true
-categories:
-  - Java
----
-
-![image](assets/水下可爱动漫女孩桌面壁纸背景图_彼岸壁纸-20241003233635-lo0zf5y.jpg)
 
 # Java反序列化
 
@@ -35,7 +17,7 @@ categories:
 
 综上：**序列化的主要目的是通过网络传输对象或者说是将对象存储到文件系统、数据库、内存中。**
 
-​![image](assets/image-20240915163123-109rbae.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240915163123-109rbae.png)​
 
 ## CommonsCollections1
 
@@ -124,7 +106,7 @@ public class CommonsCollections1 {
 
 checkSetValue对应的实现有两个如下：
 
-​![image](assets/image-20240908144737-6lcujed.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908144737-6lcujed.png)​
 
 根据PoC的代码，这里会执行TransformMap里定义的checkSetValue。
 
@@ -180,7 +162,7 @@ PoC中构造的transformers变量先到transformerChain再到outerMap，outerMap
 
 transform对应的实现有21个如下：
 
-​![image](assets/image-20240908150459-4aix5gt.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908150459-4aix5gt.png)​
 
 根据PoC中的代码，这里会运行ChainedTransformer类实现的transform。
 
@@ -210,7 +192,7 @@ ChainedTransformer实现了Transformer接口，实现了transform。
 
 transform对应的实现有21个如下：
 
-​![image](assets/image-20240908150459-4aix5gt.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240908150459-4aix5gt.png)​
 
 根据PoC中transformers变量的定义，该循环会先调用一次ConstantTransformer中实现的transform，再调用三次InvokerTransformer中实现的transform。
 
@@ -597,7 +579,7 @@ public class CommonsCollections1 {
 
 在源码处下断，调试程序，可以看到此处各个变量的值：
 
-​![image](assets/image-20240915172449-wefqila.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/nullimage-20240915172449-wefqila.png)​
 
 可以看到在3处，触发了AbstractMapEntryDecorator的调用，这就与PoC调用分析中的AbstractInputCheckedMapDecorator对应上了。
 
@@ -711,7 +693,7 @@ public class CommonsCollections1L {
 
 查看ChainedTransformer的transformer的调用关系，就可以看到LazyMap：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/image-20240916150635-6fuo82p.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/image-20240916150635-6fuo82p.png)​
 
 分析LazyMap源码，若key不存在，则调用Transformer的transform方法。
 
