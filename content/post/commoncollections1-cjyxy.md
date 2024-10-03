@@ -1,20 +1,5 @@
----
-title: Java反序列化
-slug: commoncollections1-cjyxy
-url: /post/commoncollections1-cjyxy.html
-date: '2024-09-07 16:27:32+08:00'
-lastmod: '2024-10-03 23:18:59+08:00'
-toc: true
-tags:
-  - Java反序列化
-  - CommonsCollections
-keywords: Java反序列化,CommonsCollections
-isCJKLanguage: true
-categories:
-  - Java
----
 
-![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/images/%E6%B0%B4%E4%B8%8B%E5%8F%AF%E7%88%B1%E5%8A%A8%E6%BC%AB%E5%A5%B3%E5%AD%A9%E6%A1%8C%E9%9D%A2%E5%A3%81%E7%BA%B8%E8%83%8C%E6%99%AF%E5%9B%BE_%E5%BD%BC%E5%B2%B8%E5%A3%81%E7%BA%B8-20241003233635-lo0zf5y.jpg)
+![image](assets/水下可爱动漫女孩桌面壁纸背景图_彼岸壁纸-20241003233635-lo0zf5y.jpg)
 
 # Java反序列化
 
