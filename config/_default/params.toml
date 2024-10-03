@@ -27,7 +27,7 @@ math = false
 readingTime = true
 
 [article.license]
-enabled = true
+enabled = false
 default = "Licensed under CC lantern-lab"
 
 ## Widgets
