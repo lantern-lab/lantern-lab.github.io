@@ -1570,7 +1570,7 @@ A：
     }
 ```
 
-又源码可知，`tb.add(templatesImpl)`​会触发我们的恶意排序，如果用newTransformer作为入参构造，则此处报错。
+由源码可知，`tb.add(templatesImpl)`​会触发我们的恶意排序，如果用newTransformer作为入参构造，则此处报错。
 
 因此先使用toString作为入参构造，使代码运行通过`tb.add(templatesImpl)`​，后面再通过反射把toString改为newTransformer。
 
@@ -1844,4 +1844,56 @@ Gadget chain:
 
 在TransformingComparator.compare()中触发this.transformer.transform(obj1)，后面就是CommonsCollections3的利用。
 
-‍
+#### 问题补充
+
+##### 是否能用TreeBag&TreeMap构造
+
+Q：
+
+是否能类似CommonsCollections2一样，利用TreeBag&TreeMap构造呢？
+
+A：
+
+我觉得很难，理由如下：
+
+​`tb.add(templatesImpl)`​会触发我们的恶意排序。
+
+因此CommonsCollections2中，先使用toString作为入参构造，使代码运行通过`tb.add(templatesImpl)`​，后面再通过反射把toString改为newTransformer。
+
+而在此处却很难实现。
+
+我尝试不使用`tb.add(templatesImpl)`​，而使用反射给size和map赋值，这样可以规避add的执行，但可以把等同的状态赋给实例。
+
+size容易解决，但是map却很难解决。
+
+源码中map的定义如下：
+
+​` private transient Map<E, MutableInteger> map;`​
+
+MutableInteger是AbstractMapBag内部的一个protected类。
+
+```java
+    protected static class MutableInteger {
+        protected int value;
+
+        MutableInteger(int value) {
+            this.value = value;
+        }
+
+        public boolean equals(Object obj) {
+            if (!(obj instanceof MutableInteger)) {
+                return false;
+            } else {
+                return ((MutableInteger)obj).value == this.value;
+            }
+        }
+
+        public int hashCode() {
+            return this.value;
+        }
+    }
+```
+
+这就很难搞了，因为我们无法从外部获取到MutableInteger。
+
+因此我认为很难再使用TreeBag&TreeMap构造了。
