@@ -1613,7 +1613,7 @@ A：
 
 而在注释2处发生了空指针报错：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/content/post/imagesimage-20241009180356-d2mxbfz.png)​
+​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/content/post/images/image-20241009181730-h1lb8bd.png)​
 
 ## CommonsCollections3
 
