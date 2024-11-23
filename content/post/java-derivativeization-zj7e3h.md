@@ -12,7 +12,8 @@ categories:
   - Java
 keywords: CommonsCollections,Java反序列化
 isCJKLanguage: true
-image: /post/images/ceshi.jpg
+image: >-
+  https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20241123190803.jpg
 ---
 
 # 【Java反序列化】CommonsCollections链
