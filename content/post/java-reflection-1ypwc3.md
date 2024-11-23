@@ -11,7 +11,8 @@ categories:
   - Java
 keywords: Java反射
 isCJKLanguage: true
-image: /post/images/ceshi3.jpg
+image: >-
+  https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20241123185100.png
 ---
 
 # Java反射
