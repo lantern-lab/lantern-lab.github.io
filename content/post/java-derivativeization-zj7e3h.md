@@ -1,14 +1,5 @@
----
-title: Java反序列化
-slug: java-derivativeization-zj7e3h
-url: /post/java-derivativeization-zj7e3h.html
-date: '2024-11-23 18:24:34+08:00'
-lastmod: '2024-11-23 18:26:27+08:00'
-toc: true
-isCJKLanguage: true
----
 
-# Java反序列化
+# 【Java反序列化】CommonsCollections链
 
 # Java反序列化
 
