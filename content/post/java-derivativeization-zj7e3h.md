@@ -125,7 +125,7 @@ public class CommonsCollections1 {
 
 checkSetValue对应的实现有两个如下：
 
-​![image](https://raw.githubusercontent.com/lantern-lab/lantern-lab.github.io/master/content/post/images/image-20240908144737-6lcujed.png)​
+​![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/image-20241125150037-fmwbr10.png)​
 
 根据PoC的代码，这里会执行TransformMap里定义的checkSetValue。
 
