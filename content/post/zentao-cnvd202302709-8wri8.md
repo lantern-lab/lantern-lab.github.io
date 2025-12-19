@@ -3,7 +3,11 @@ title: 禅道CNVD-2023-02709
 slug: zentao-cnvd202302709-8wri8
 url: /post/zentao-cnvd202302709-8wri8.html
 date: '2025-12-17 01:17:28+08:00'
-lastmod: '2025-12-19 14:50:06+08:00'
+lastmod: '2025-12-19 15:00:08+08:00'
+tags:
+  - PHP
+  - 禅道
+keywords: PHP,禅道
 toc: true
 isCJKLanguage: true
 ---
