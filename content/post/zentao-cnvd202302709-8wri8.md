@@ -10,6 +10,8 @@ isCJKLanguage: true
 
 
 
+![image](http://127.0.0.1:3128/assets/wallhaven-yxd9vk-20251219145625-5g9b07o.png)
+
 # 禅道CNVD-2023-02709
 
 # 一、影响范围
