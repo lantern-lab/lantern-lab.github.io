@@ -3,7 +3,7 @@ title: 2025第三届数信杯
 slug: 2025-the-3rd-shuxin-cup-qxcuc
 url: /post/2025-the-3rd-shuxin-cup-qxcuc.html
 date: '2026-01-01 18:16:49+08:00'
-lastmod: '2026-01-02 00:11:56+08:00'
+lastmod: '2026-01-02 03:11:25+08:00'
 toc: true
 isCJKLanguage: true
 ---
@@ -293,7 +293,7 @@ python MKDecrypt.py -X -m /mnt data 0xfffffa8018ea11a8_master.key
 
 ![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260101185954.png)
 
-### 流量分析
+### 流量分析（没做出来）
 
 #### 题目
 
@@ -1436,5 +1436,261 @@ if __name__ == "__main__":
 ```
 
 MD5 (32位小写): e5d7a8f4928cf5bb60df13dad400adbb
+
+## 数据存储
+
+### 数据存储1
+
+#### 题目
+
+工程师小王为了保证数据的安全存储，开发了对数据处理的程序，但这样的处理方式安全吗?分析程序功能，解密文件获取原始数据，提交第6行第2列数据。
+
+给了re87a57766文件和info_19ff9a2.ori.en文件，解密info_19ff9a2.ori.en，提交第六行第二列
+
+#### 解答
+
+本题是为第二题做铺垫的
+
+直接ida
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102003941.png)
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102004017.png)
+
+中转函数，看sub_401249
+
+```c
+char *__fastcall sub_401249(unsigned __int8 *a1, int a2, unsigned int *a3)
+{
+  unsigned __int8 *v4; // rax
+  unsigned int v5; // eax
+  int v6; // eax
+  unsigned int v7; // eax
+  unsigned int v8; // eax
+  unsigned __int8 *v11; // [rsp+10h] [rbp-18h]
+  unsigned int v12; // [rsp+1Ch] [rbp-Ch]
+  unsigned int v13; // [rsp+1Ch] [rbp-Ch]
+  int v14; // [rsp+20h] [rbp-8h]
+  int v15; // [rsp+24h] [rbp-4h]
+  int v16; // [rsp+24h] [rbp-4h]
+  int v17; // [rsp+24h] [rbp-4h]
+
+  v11 = a1;
+  v15 = 0;
+  v14 = 0;
+  v12 = 0;
+  if ( !a1 )
+    return 0;
+  if ( !dword_4042A0 )
+    sub_4011D6();
+  while ( 1 )
+  {
+    v6 = a2--;
+    if ( !v6 || v12 > 0xFFFFFFFB )
+      break;
+    v4 = v11++;
+    v16 = *v4 + v15;
+    if ( ++v14 == 3 )
+    {
+      byte_4042A4[v12] = byte_402020[v16 >> 18];
+      byte_4042A4[v12 + 1] = byte_402020[(v16 >> 12) & 0x3F];
+      byte_4042A4[v12 + 2] = byte_402020[(v16 >> 6) & 0x3F];
+      v5 = v12 + 3;
+      v12 += 4;
+      byte_4042A4[v5] = byte_402020[v16 & 0x3F];
+      v15 = 0;
+      v14 = 0;
+    }
+    else
+    {
+      v15 = v16 << 8;
+    }
+  }
+  if ( v14 )
+  {
+    v17 = v15 << (8 * (2 - v14));
+    byte_4042A4[v12] = byte_402020[v17 >> 18];
+    byte_4042A4[v12 + 1] = byte_402020[(v17 >> 12) & 0x3F];
+    v7 = v12 + 2;
+    v13 = v12 + 3;
+    if ( v14 == 1 )
+      byte_4042A4[v7] = 61;
+    else
+      byte_4042A4[v7] = byte_402020[(v17 >> 6) & 0x3F];
+    v8 = v13;
+    v12 = v13 + 1;
+    byte_4042A4[v8] = 61;
+  }
+  byte_4042A4[v12] = 0;
+  *a3 = v12;
+  return byte_4042A4;
+}
+```
+
+这是一个base64编码函数
+
+总结：re87a57766是个ELF可执行文件，读取info_19ff9a2.ori文件，base64编码其内容后，输出为info_19ff9a2.ori.enc
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102004333.png)
+
+### 数据存储2（没做出来）
+
+#### 题目
+
+工程师小王认识到前面开发的程序并不能保证对数据的安全存储，现在对处理程序进行了改进，这次能行吗?分析程序功能，解密文件获取原始数据，提交第8行第2列数据。
+
+类似上题，加密方式变了
+
+#### 解答
+
+‍
+
+## 数据解密
+
+### 题目
+
+```python
+import os
+from Crypto.Util.number import *
+from Crypto.Cipher import AES
+from secret import flag, key
+from Crypto.Util.Padding import pad
+
+assert(len(flag) == 38)
+assert flag[:5] == b'flag{' and flag[-1:] == b'}'
+assert(len(key) == 16)
+
+flag='flag{IADMIN-TOP-18880101-7634567_2025}'
+def padding(msg):
+    tmp = 16 - len(msg) % 16
+    pad = format(tmp, '02x')
+    return bytes.fromhex(pad * tmp) + msg
+message = padding(flag)
+hint = bytes_to_long(key) ^ bytes_to_long(message[:16])
+message = pad(message, 16, 'pkcs7')
+print(message)
+IV = os.urandom(16)
+encryption = AES.new(key, AES.MODE_CBC, iv=IV)
+enc = encryption.encrypt(message)
+
+print('enc =', enc.hex())
+print('hint =', hex(hint)[2:])
+
+# enc = 1ce1df3812668ce0bccd86c146cc56989681e128edd0676f5d26e01abdee90c860e22a5a491f94ac5ca3ab02242740fb8c35a3b60ea737ca0d2662fba2b0e299
+# hint = 32393f4e3c3c4f3e323a512a5356437d
+```
+
+*吐槽：这题是长亭出的吧，跟我一个月前做的sm4版本一模一样*
+
+### 解答
+
+```python
+def padding(msg):
+    tmp = 16 - len(msg) % 16
+    pad = format(tmp, '02x')
+    return bytes.fromhex(pad * tmp) + msg
+
+msg1 = "flag{0123456789abcdef0123456789abcdef}"
+msg2 = padding(msg1.encode())
+print(msg2)
+msg3 = pad(msg2 , 16, 'pkcs7')
+print(padding(msg3))
+```
+
+自己编一点数据看看填充效果
+
+```python
+b'\n\n\n\n\n\n\n\n\n\nflag{0123456789abcdef0123456789abcdef}'
+b'\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\n\n\n\n\n\n\n\n\n\nflag{0123456789abcdef0123456789abcdef}\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10'
+```
+
+可知hint=‘\n\n\n\n\n\n\n\n\n\nflag{?' ^ key
+
+可通过爆破最后一位的值，尝试哪个key是对的
+
+```python
+c1 = enc(k,p1^iv)
+c2 = enc(k,p2^c1)
+c3 = enc(k,p3^c2)
+
+p3 = dec(k,c3)^c2
+p2 = dec(k,c2)^c1
+p1 = dec(k,c1)^iv
+```
+
+根据cbc的加密方式特征，iv不知道的情况下，不影响解密p2，p3等后续密文
+
+根据flag的特征可知，明文的结尾是特征是  }\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10
+
+因此在爆破的时候，看哪个key可以满足该特征
+
+```python
+import hashlib
+from Crypto.Cipher import AES
+import os
+import string
+from Crypto.Util.number import *
+from Crypto.Util.Padding import pad
+
+enc = '1ce1df3812668ce0bccd86c146cc56989681e128edd0676f5d26e01abdee90c860e22a5a491f94ac5ca3ab02242740fb8c35a3b60ea737ca0d2662fba2b0e299'
+hint = '32393f4e3c3c4f3e323a512a5356437d'
+
+"""
+c1 = enc(k,p1^iv)
+c2 = enc(k,p2^c1)
+c3 = enc(k,p3^c2)
+
+p3 = dec(k,c3)^c2
+p2 = dec(k,c2)^c1
+p1 = dec(k,c1)^iv
+
+"""
+
+'''
+flag = 6+16+16
+flag{? 5位，还差一位
+} 结尾
+'''
+
+def padding(msg):
+    tmp = 16 - len(msg) % 16
+    pad = format(tmp, '02x')
+    return bytes.fromhex(pad * tmp) + msg
+
+msg1 = "flag{0123456789abcdef0123456789abcdef}"
+msg2 = padding(msg1.encode())
+print(msg2)
+msg3 = pad(msg2 , 16, 'pkcs7')
+print(padding(msg3))
+
+
+enc_b = bytes.fromhex(enc) # 64
+hint_b = bytes.fromhex(hint)
+
+IV_fake = os.urandom(16)
+for char in string.ascii_letters + string.digits:
+    # print("flag{"+char)
+    test_msg = '\n\n\n\n\n\n\n\n\n\nflag{'+char
+    # print(test.encode())
+    test_key = long_to_bytes(bytes_to_long(hint_b) ^ bytes_to_long(test_msg.encode()))
+
+    encryption = AES.new(test_key, AES.MODE_CBC, iv=IV_fake)
+
+    p = encryption.decrypt(enc_b)
+    if '}\\x10' in str(p):
+        print(p)
+        print(test_msg)
+
+
+# flag{IADMIN-TOP-18880101-7634567_2025}
+```
+
+## 数据隐藏
+
+### 题目
+
+某汽车供应链物流中台正在进行季度数据归档，由于归档任务占用了主索引资源，运维团队启用了一套“底层应急索引机制”。该机制并不依赖 SOLite 原生的索引，而是设计了一套自定义的跨页链表协议，将关键筛选逻辑碎片化地存储在数据库文件的物理空闲块 (Freeblocks) 数据区中。 请检査 sys_config 表，获取底层链表的入口指针以及自定义链表节点的结构定义。根据结构定义，从底层物理空间中提取并重组出“特定批次货物筛选脚本”(SQL)。隐写数据位于 SQLite Freeblock 的有效载荷区(跳过 Freeblock 自身的4字节头部)。数据经过了异或处理，密钥与所在物理页号有关。运行提取出的脚本，定位出该批次雷达模组所在的 集装箱编号(containerid)和车牌号(license_plate)，最终需要将 container_id 和license_plate 的后五位数字使用下划线连接提交，例如:CN2877541671_72345。
+
+### 解答
 
 ‍
