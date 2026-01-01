@@ -1,16 +1,16 @@
 ---
-title: 2025第三届数信杯
+title: 2025第三届数信杯WP
 slug: 2025-the-3rd-shuxin-cup-qxcuc
 url: /post/2025-the-3rd-shuxin-cup-qxcuc.html
 date: '2026-01-01 18:16:49+08:00'
-lastmod: '2026-01-02 05:16:17+08:00'
+lastmod: '2026-01-02 05:38:11+08:00'
 toc: true
 isCJKLanguage: true
 ---
 
 
 
-# 2025第三届数信杯
+# 2025第三届数信杯WP
 
 ## 数据处理
 
@@ -1155,7 +1155,7 @@ if __name__ == "__main__":
 
 提交该文档md5值即可
 
-### 钓鱼链接💩💩💩
+### 钓鱼链接（shit）
 
 #### 题目
 
@@ -1776,3 +1776,11 @@ WHERE
 ```
 
 ![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102051555.png)
+
+## 数据恢复
+
+### 题目
+
+某公司截获到密钥文件以及脱敏后的文件，发现密钥文件中的参数存在异常情况，结合密钥文件提供分析，发现可能采用变异RSA算法针对重要文件进行脱敏处理。请结合提供附件内容，进行分析并脱敏恢复，找到PhoneNumber为17962732783对应的id、IndentificationCard、BankCard，并以``进行连接并提交。如id为1，IndentificationCard为2345，BankCard为6789，最终提交1_2345_6789。
+
+‍
