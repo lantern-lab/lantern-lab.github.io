@@ -3,7 +3,7 @@ title: 2025第三届数信杯
 slug: 2025-the-3rd-shuxin-cup-qxcuc
 url: /post/2025-the-3rd-shuxin-cup-qxcuc.html
 date: '2026-01-01 18:16:49+08:00'
-lastmod: '2026-01-02 03:11:25+08:00'
+lastmod: '2026-01-02 05:16:17+08:00'
 toc: true
 isCJKLanguage: true
 ---
@@ -1693,4 +1693,86 @@ for char in string.ascii_letters + string.digits:
 
 ### 解答
 
-‍
+先看sys_config 表
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102050729.png)
+
+```python
+recovery.pointer	ERR_PTR: 0000013B:04F0                  Start address of emergency chain
+recovery.structure	Struct: >IHH (NextPage, NextOff, Len)	Custom header inside freeblocks
+recovery.encryption	XOR_PAGE_ID_BE	Encryption mode
+```
+
+1. **起始位置**
+
+   - page=`0x13B`
+   - offset=`0x04F0`
+2. ​**节点结构**  **​`>IHH`​**：
+
+   - ​`I` (4字节): NextPage - 下一节点页面号
+   - ​`H` (2字节): NextOff - 下一节点页内偏移
+   - ​`H` (2字节): Len - 当前 payload 长度
+
+3. **XOR_PAGE_ID_BE** 是加密模式的描述
+
+   - **XOR：** 异或运算
+   - **PAGE_ID**：页面号（当前数据所在的 SQLite 页面编号）
+   - **BE：** Big-Endian（大端序）
+
+加密模式具体含义
+
+对 payload 数据进行 XOR 解密时：
+
+1. 取当前节点所在的​**页面号**（如第 2 页、第 5 页等）
+2. 将页面号转为 **4 字节 Big-Endian** 格式（高位在前）
+3. 用这 4 字节作为密钥，**循环异或** payload 的每个字节
+
+```python
+import struct
+
+DB_FILE = r'D:\Challenges\2025第三届数信杯\数据隐藏\sqlite.db'  # SQLite数据库文件路径
+START_PAGE = 0x13B # 315
+START_OFF = 0x04F0 # 1264
+PAGE_SIZE = 4096  # SQLite默认页大小，单位字节
+
+page = 0x13B # 315
+offset = 0x04F0 # 1656
+PAGE_SIZE = 4096  # SQLite默认页大小，单位字节
+with open(DB_FILE, 'rb') as f:
+    fragments = []
+    while page != 0:
+        f.seek((page-1) * PAGE_SIZE + offset)
+        header = f.read(8) # 4+2+2 = 8字节
+        next_page, next_off, payload_len = struct.unpack('>IHH', header)
+        # print(next_page, next_off, payload_len)
+
+        f.seek((page-1) * PAGE_SIZE + +offset+8)
+        payload = f.read(payload_len)
+        key = struct.pack('>I', page)
+        decrypted = bytes(b ^ key[i % 4] for i, b in enumerate(payload))
+        # print(decrypted) 
+        fragments.append(decrypted)
+
+        page = next_page
+        offset = next_off
+print(b''.join(fragments))
+```
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102051501.png)
+
+把里面的16进制转义一下
+
+```sql
+SELECT 
+    t1.container_id,
+    t2.license_plate
+FROM orders t1
+JOIN drivers t2 ON t1.driver_id = t2.driver_id
+WHERE 
+    t1.route_path LIKE '%深圳转运中心%'
+    AND t1.weight_kg BETWEEN 45.50 AND 45.60
+    AND t2.phone LIKE '%9527'
+    AND t1.handling_code = 'LIDAR_QC_HOLD';
+```
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102051555.png)
