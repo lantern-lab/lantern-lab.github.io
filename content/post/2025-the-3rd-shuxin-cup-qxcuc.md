@@ -3,7 +3,7 @@ title: 2025第三届数信杯WP
 slug: 2025-the-3rd-shuxin-cup-qxcuc
 url: /post/2025-the-3rd-shuxin-cup-qxcuc.html
 date: '2026-01-01 18:16:49+08:00'
-lastmod: '2026-01-02 21:11:10+08:00'
+lastmod: '2026-01-03 23:56:37+08:00'
 toc: true
 isCJKLanguage: true
 ---
@@ -1580,7 +1580,7 @@ print('hint =', hex(hint)[2:])
 # hint = 32393f4e3c3c4f3e323a512a5356437d
 ```
 
-*吐槽：这题是长亭出的吧，跟我一个月前做的sm4版本一模一样*
+*吐槽：这题是君立出的吧，跟我一个月前做的sm4版本一模一样*
 
 ### 解答
 
@@ -1777,11 +1777,11 @@ WHERE
 
 ![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260102051555.png)
 
-## 数据恢复（没做出来）
+## 数据恢复
 
 ### 题目
 
-某公司截获到密钥文件以及脱敏后的文件，发现密钥文件中的参数存在异常情况，结合密钥文件提供分析，发现可能采用变异RSA算法针对重要文件进行脱敏处理。请结合提供附件内容，进行分析并脱敏恢复，找到PhoneNumber为17962732783对应的id、IndentificationCard、BankCard，并以``进行连接并提交。如id为1，IndentificationCard为2345，BankCard为6789，最终提交1_2345_6789。
+某公司截获到密钥文件以及脱敏后的文件，发现密钥文件中的参数存在异常情况，结合密钥文件提供分析，发现可能采用变异RSA算法针对重要文件进行脱敏处理。请结合提供附件内容，进行分析并脱敏恢复，找到PhoneNumber为17962732783对应的id、IndentificationCard、BankCard，并以_进行连接并提交。如id为1，IndentificationCard为2345，BankCard为6789，最终提交1_2345_6789。
 
 ```plaintext
 -----BEGIN RSA PRIVATE KEY-----
@@ -1789,6 +1789,381 @@ MIICWgIBAAKBgQCjev23ZhgE9HGeCV1PFxf1Mcs4AVX0kp2mXIpEkWXtrQ/Jwtsq172SQlHxaUEAwQ+b
 -----END RSA PRIVATE KEY-----
 ```
 
-#### 解答
+### 解答
 
-‍
+根据损坏的密钥文件可知
+
+```plaintext
+# RSA 参数 (十六进制 + 位长)
+n (1024 bits) = 0xa37afdb7661804f4719e095d4f1717f531cb380155f4929da65c8a449165edad0fc9c2db2ad7bd924251f1694100c10f9bb4fedd37bf6a6b4bf410cad1b15eb6a3b1015b0b3bbbae6d4e4ed914d9721f9cc8c8640afb3a35bc30b16194d0cc4e7107e4cea6526fe17aa06bdbc9fb1e6d47fe5902005136d9b705c784d2011db9
+e (17 bits) = 0x10001
+
+# p 的已知高位 (低 48 bits 未知)
+p (496 bits), 已知高 448 bits: p_high = 0x9d025160d56d4971363f3cf2ce7e3e96215c50bf50d0cc606f5645de7ec113d16d931383e649bc2c7328499d219e2982b726ae41c5370aa8
+unknown_bits = 48
+
+# 其他参数位长与首尾字节 (如可用)
+q (512 bits), high_byte=0xaa, low_byte=0x8f
+dp (512 bits), high_byte=0xc9, low_byte=0x15
+dq (509 bits), high_byte=0x16, low_byte=0xa7
+qinv (509 bits), high_byte=0x12, low_byte=0x2f
+d (1023 bits), high_byte=0x6d, low_byte=0xed
+```
+
+```python
+#!/usr/bin/env python3
+"""
+从损坏的 RSA PEM 私钥文件中提取有用信息
+"""
+
+import base64
+
+def read_pem(filepath):
+    """读取 PEM 文件并解码 Base64"""
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+    
+    b64_data = ''
+    for line in lines:
+        line = line.strip()
+        if line.startswith('-----'):
+            continue
+        b64_data += line
+    
+    return base64.b64decode(b64_data)
+
+def parse_asn1_integer(data, offset):
+    """解析 ASN.1 INTEGER"""
+    if offset >= len(data) or data[offset] != 0x02:
+        return None, offset
+    
+    offset += 1
+    length = data[offset]
+    offset += 1
+    
+    if length & 0x80:
+        num_bytes = length & 0x7f
+        length = int.from_bytes(data[offset:offset+num_bytes], 'big')
+        offset += num_bytes
+    
+    int_bytes = data[offset:offset+length]
+    value = int.from_bytes(int_bytes, 'big')
+    
+    return value, offset + length
+
+def parse_rsa_private_key(der_data):
+    """解析 RSA 私钥的 DER 编码"""
+    offset = 0
+    
+    if der_data[offset] != 0x30:
+        return None
+    
+    offset += 1
+    length = der_data[offset]
+    offset += 1
+    if length & 0x80:
+        num_bytes = length & 0x7f
+        offset += num_bytes
+    
+    field_names = ['version', 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qinv']
+    values = {}
+    
+    for name in field_names:
+        value, offset = parse_asn1_integer(der_data, offset)
+        if value is not None:
+            values[name] = value
+        else:
+            break
+    
+    return values
+
+def extract_useful_info(values):
+    """提取有用信息"""
+    print("=" * 60)
+    print("RSA 私钥提取结果")
+    print("=" * 60)
+    
+    n = values.get('n')
+    e = values.get('e')
+    d = values.get('d')
+    p = values.get('p')
+    q = values.get('q')
+    dp = values.get('dp')
+    dq = values.get('dq')
+    qinv = values.get('qinv')
+    
+    # 提取 p 的已知高位
+    if p:
+        p_hex = hex(p)[2:]
+        trailing_zeros = len(p_hex) - len(p_hex.rstrip('0'))
+        unknown_bits = trailing_zeros * 4
+        p_high = p >> unknown_bits if unknown_bits > 0 else p
+    
+    print("\n# RSA 参数 (十六进制 + 位长)")
+    if n:
+        print(f"n ({n.bit_length()} bits) = 0x{n:x}")
+    if e:
+        print(f"e ({e.bit_length()} bits) = 0x{e:x}")
+    
+    if p:
+        total_p_bits = p.bit_length()
+        if unknown_bits > 0:
+            known_high_bits = total_p_bits - unknown_bits
+            print(f"\n# p 的已知高位 (低 {unknown_bits} bits 未知)")
+            print(f"p ({total_p_bits} bits), 已知高 {known_high_bits} bits: p_high = 0x{p_high:x}")
+            print(f"unknown_bits = {unknown_bits}")
+        else:
+            print(f"\n# p ({total_p_bits} bits) = 0x{p:x}")
+    
+    # 提取 q, dp, dq, qinv 的已知字节
+    print("\n# 其他参数位长与首尾字节 (如可用)")
+    if q:
+        try:
+            q_bits = q.bit_length()
+            q_bytes = q.to_bytes((q_bits + 7) // 8, 'big')
+            print(f"q ({q_bits} bits), high_byte=0x{q_bytes[0]:02x}, low_byte=0x{q_bytes[-1]:02x}")
+        except OverflowError:
+            pass
+
+    if dp:
+        try:
+            dp_bits = dp.bit_length()
+            dp_bytes = dp.to_bytes((dp_bits + 7) // 8, 'big')
+            print(f"dp ({dp_bits} bits), high_byte=0x{dp_bytes[0]:02x}, low_byte=0x{dp_bytes[-1]:02x}")
+        except OverflowError:
+            pass
+
+    if dq:
+        try:
+            dq_bits = dq.bit_length()
+            dq_bytes = dq.to_bytes((dq_bits + 7) // 8, 'big')
+            print(f"dq ({dq_bits} bits), high_byte=0x{dq_bytes[0]:02x}, low_byte=0x{dq_bytes[-1]:02x}")
+        except OverflowError:
+            pass
+
+    if qinv:
+        try:
+            qinv_bits = qinv.bit_length()
+            qinv_bytes = qinv.to_bytes((qinv_bits + 7) // 8, 'big')
+            print(f"qinv ({qinv_bits} bits), high_byte=0x{qinv_bytes[0]:02x}, low_byte=0x{qinv_bytes[-1]:02x}")
+        except OverflowError:
+            pass
+
+    if d:
+        try:
+            d_bits = d.bit_length()
+            d_bytes = d.to_bytes((d_bits + 7) // 8, 'big')
+            print(f"d ({d_bits} bits), high_byte=0x{d_bytes[0]:02x}, low_byte=0x{d_bytes[-1]:02x}")
+        except OverflowError:
+            pass
+
+if __name__ == '__main__':
+    filepath = r'c:\Users\33113\Desktop\数信杯\数据恢复\key_pri.pem'
+    
+    try:
+        der_data = read_pem(filepath)
+        values = parse_rsa_private_key(der_data)
+        
+        if values:
+            extract_useful_info(values)
+                
+    except Exception as ex:
+        print(f"错误: {ex}")
+        import traceback
+        traceback.print_exc()
+
+```
+
+因为n为1024位，q为512位，因此推测p也为512位，有高16位未知，因此程序误报为496位
+
+即已知p的结构为16 + 448(已知) + 48
+
+n已知，e已知
+
+因此可以遍历高16位，做Coppersmith攻击
+
+```python
+#Sage
+n = Integer(0xa37afdb7661804f4719e095d4f1717f531cb380155f4929da65c8a449165edad0fc9c2db2ad7bd924251f1694100c10f9bb4fedd37bf6a6b4bf410cad1b15eb6a3b1015b0b3bbbae6d4e4ed914d9721f9cc8c8640afb3a35bc30b16194d0cc4e7107e4cea6526fe17aa06bdbc9fb1e6d47fe5902005136d9b705c784d2011db9)
+p_known = Integer(0x9d025160d56d4971363f3cf2ce7e3e96215c50bf50d0cc606f5645de7ec113d16d931383e649bc2c7328499d219e2982b726ae41c5370aa8)
+pbits = 512 # p的位数
+hbits = 16  # 未知16位高位
+lbits = 48  # 未知48位低位
+
+print("====== trying hack !!! ======")
+# Coppersmith攻击
+PR.<lp> = PolynomialRing(Zmod(n))
+for hp in range(1 << hbits,1,-1):
+    # 输出进度
+    if hp % 1000 == 0:
+        print(hex(hp)," of ", 1 << hbits) 
+
+    test_p = (Integer(hp) << (512-16)) + (p_known << 48) + lp
+    # 50是为了是“略大于未知位数”的保护裕量，确保 small_roots 能搜索到真实的 p_low
+    # 关于 beta = 0.45：beta 控制理论恢复条件（与已知高位比例有关），常用经验值在 0.4–0.5 区间
+    roots = test_p.small_roots(X=2^50, beta=0.45)
+    if roots:
+        p = (Integer(hp) << (512-16)) + (p_known << 48) + Integer(roots[0])
+        q = n // p
+        print("====== SUCCESS !!! ======")
+        print(f'n: {n}')
+        print(f'p: {p}')
+        print(f'q: {q}')
+        break
+```
+
+解出p和q
+
+```python
+p = 12878462475668980891688458616261003784858831336454571583609952190632795271670483299149893444276645867537740745994784742224790817486061554912749320101486391
+q = 8914097078706231834651365689334575469686517068801737414666260678556477114364345584457623426741318622599741628404907424594363093944041411815871796251591311
+n = 114799864732588688843518396777617821715231781884433300207048373456946985302497571534259572002054374342188682117755703990725304408314175730859833203345047593135879438759002962749125516153511748842154906106020044598244904756639111669917726068490351790461850539227887758512583535362600673113397153419850160348601
+e = 65537
+```
+
+题目提示用了编译rsa算法，因此猜测可能用PKCS#1规则或者OAEP规则，这是两个不同的填充方式
+
+都尝试了发现用的是OAEP规则
+
+```python
+import csv
+import base64
+from typing import Optional, Tuple
+
+# 说明：此脚本使用 PyCryptodome 实现 RSA-OAEP 解密，私钥参数内联。
+# 输出文件为 decrypted_users_pycrypto.csv，以免覆盖其他结果文件。
+
+# === 内联 RSA 私钥参数（来自 enc.py） ===
+e = 65537
+p = 12878462475668980891688458616261003784858831336454571583609952190632795271670483299149893444276645867537740745994784742224790817486061554912749320101486391
+q = 8914097078706231834651365689334575469686517068801737414666260678556477114364345584457623426741318622599741628404907424594363093944041411815871796251591311
+n = 114799864732588688843518396777617821715231781884433300207048373456946985302497571534259572002054374342188682117755703990725304408314175730859833203345047593135879438759002962749125516153511748842154906106020044598244904756639111669917726068490351790461850539227887758512583535362600673113397153419850160348601
+
+
+def build_pycrypto_key():
+    """构造 PyCryptodome 的 RSA 私钥对象（含 CRT 参数）。"""
+    from Crypto.PublicKey import RSA
+    phi = (p - 1) * (q - 1)
+    d = pow(e, -1, phi)
+    # RSA.construct((n, e, d, p, q)) 或 (n,e,d,p,q) 均可；使用 (n,e,d,p,q) 以包含 CRT
+    key = RSA.construct((n, e, d, p, q))
+    return key
+
+
+def decrypt_oaep_pycrypto(key, ct: bytes) -> Optional[Tuple[bytes, str]]:
+    """使用 PyCryptodome 的 PKCS1_OAEP，先试 SHA1，再试 SHA256。"""
+    from Crypto.Cipher import PKCS1_OAEP
+    from Crypto.Hash import SHA1, SHA256
+
+    for name, H in (('SHA1', SHA1), ('SHA256', SHA256)):
+        try:
+            cipher = PKCS1_OAEP.new(key, hashAlgo=H)
+            pt = cipher.decrypt(ct)
+            return pt, name
+        except Exception:
+            continue
+    return None
+
+cyphertext = "nXp80O3XBHBekOlXFBwNiJGFF9hQzp5EpzZf9RTfETbWmItbmeMVhc6dLh+TvEqEf4C2TLehQ/tzY4pnqswLnIQWiAUx79utwzIbbnobV5n1fTyZp9GZ9SuECT8GdWPbO1B+oZYTHG3/mD4iwIo08UZiijW400IDSzoRXWhhlCs="
+ct = base64.b64decode(cyphertext)
+key = build_pycrypto_key()
+result = decrypt_oaep_pycrypto(key, ct)
+print(result)
+
+# 输出 (b'17659698488', 'SHA1')
+```
+
+最终解密脚本
+
+```python
+import csv
+import base64
+from typing import Optional, Tuple
+
+# 说明：此脚本使用 PyCryptodome 实现 RSA-OAEP 解密，私钥参数内联。
+# 输出文件为 decrypted_users_pycrypto.csv，以免覆盖其他结果文件。
+
+# === 内联 RSA 私钥参数（来自 enc.py） ===
+e = 65537
+p = 12878462475668980891688458616261003784858831336454571583609952190632795271670483299149893444276645867537740745994784742224790817486061554912749320101486391
+q = 8914097078706231834651365689334575469686517068801737414666260678556477114364345584457623426741318622599741628404907424594363093944041411815871796251591311
+n = 114799864732588688843518396777617821715231781884433300207048373456946985302497571534259572002054374342188682117755703990725304408314175730859833203345047593135879438759002962749125516153511748842154906106020044598244904756639111669917726068490351790461850539227887758512583535362600673113397153419850160348601
+
+
+def build_pycrypto_key():
+    """构造 PyCryptodome 的 RSA 私钥对象（含 CRT 参数）。"""
+    from Crypto.PublicKey import RSA
+    phi = (p - 1) * (q - 1)
+    d = pow(e, -1, phi)
+    # RSA.construct((n, e, d, p, q)) 或 (n,e,d,p,q) 均可；使用 (n,e,d,p,q) 以包含 CRT
+    key = RSA.construct((n, e, d, p, q))
+    return key
+
+
+def decrypt_oaep_pycrypto(key, ct: bytes) -> Optional[Tuple[bytes, str]]:
+    """使用 PyCryptodome 的 PKCS1_OAEP，先试 SHA1，再试 SHA256。"""
+    from Crypto.Cipher import PKCS1_OAEP
+    from Crypto.Hash import SHA1, SHA256
+
+    for name, H in (('SHA1', SHA1), ('SHA256', SHA256)):
+        try:
+            cipher = PKCS1_OAEP.new(key, hashAlgo=H)
+            pt = cipher.decrypt(ct)
+            return pt, name
+        except Exception:
+            continue
+    return None
+
+
+def process_csv(infile: str = 'encrypted_users.csv', outfile: str = 'decrypted_users_pycrypto.csv') -> None:
+    """读取 CSV、用 PyCryptodome 解密目标列并写回结果。"""
+    key = build_pycrypto_key()
+
+    with open(infile, newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        rows = list(reader)
+
+    targets = [c for c in ('PhoneNumber', 'IndentificationCard', 'BankCard') if c in header]
+    target_idxs = [header.index(c) for c in targets]
+
+    out_rows = [header]
+
+    for r in rows:
+        out = list(r)
+        for idx in target_idxs:
+            ct_b64 = r[idx].strip()
+            if not ct_b64:
+                out[idx] = ''
+                continue
+            try:
+                ct = base64.b64decode(ct_b64)
+            except Exception as ex:
+                out[idx] = f'B64_ERROR:{ex}'
+                continue
+
+            result = decrypt_oaep_pycrypto(key, ct)
+            if not result:
+                out[idx] = 'DECRYPT_FAIL'
+            else:
+                pt, alg = result
+                try:
+                    out[idx] = pt.decode('utf-8')
+                except Exception:
+                    out[idx] = pt.hex()
+
+        out_rows.append(out)
+
+    with open(outfile, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerows(out_rows)
+
+    print('Wrote', outfile)
+
+
+if __name__ == '__main__':
+    process_csv()
+
+```
+
+![image](https://lantern-1313649837.cos.ap-beijing.myqcloud.com/image/20260103235616.png)
